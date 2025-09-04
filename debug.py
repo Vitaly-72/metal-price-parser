@@ -1,6 +1,7 @@
 # debug.py
 import requests
 from bs4 import BeautifulSoup
+import re
 
 def analyze_trimet():
     url = "https://trimet.ru/catalog/chernyy_metalloprokat/armatura_1/"
@@ -23,21 +24,37 @@ def analyze_trimet():
     
     print("Поиск товарных элементов...")
     
-    # Ищем все div элементы с классами содержащими product
-    product_elements = soup.find_all('div', class_=lambda x: x and 'product' in x.lower())
-    print(f"Найдено элементов с 'product': {len(product_elements)}")
+    # Ищем конкретно товары
+    product_elements = soup.find_all('div', class_='product-list__item-roznica')
+    print(f"Найдено товаров: {len(product_elements)}")
     
-    for i, elem in enumerate(product_elements[:5]):  # Первые 5 элементов
-        print(f"\n--- Элемент {i+1} ---")
-        print(f"Классы: {elem.get('class')}")
-        print(f"HTML: {str(elem)[:200]}...")
-    
-    # Ищем цены
-    price_elements = soup.find_all(string=re.compile(r'руб'))
-    print(f"\nНайдено элементов с 'руб': {len(price_elements)}")
-    
-    for i, elem in enumerate(price_elements[:3]):
-        print(f"Цена {i+1}: {elem}")
+    for i, item in enumerate(product_elements[:3]):  # Первые 3 товара
+        print(f"\n--- ТОВАР {i+1} ---")
+        
+        # Название
+        name_elem = item.find('a', class_='data_name_product')
+        if name_elem:
+            print(f"Название: {name_elem.get_text(strip=True)}")
+        else:
+            print("❌ Название не найдено")
+        
+        # Цена
+        price_elem = item.find('p', class_='price-type-roznica')
+        if price_elem:
+            price_text = price_elem.get_text(strip=True)
+            print(f"Цена: '{price_text}'")
+            
+            # Пытаемся извлечь цифры
+            price_match = re.search(r'(\d+[\s\d]*)\s*руб', price_text)
+            if price_match:
+                price_str = price_match.group(1).replace(' ', '')
+                print(f"Извлеченная цена: {price_str}")
+            else:
+                print("❌ Не удалось извлечь цену")
+        else:
+            print("❌ Цена не найдена")
+        
+        print(f"HTML: {str(item)[:200]}...")
 
 if __name__ == "__main__":
     analyze_trimet()
