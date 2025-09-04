@@ -1,4 +1,4 @@
-name: Metal Parser
+name: Metal Parser2
 
 on:
   workflow_dispatch:
