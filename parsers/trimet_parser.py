@@ -3,24 +3,26 @@ from bs4 import BeautifulSoup
 import re
 from typing import List, Dict
 
-class TrimetParser(BaseParser):
+class ParadParser(BaseParser):
     def parse_products(self, html: str) -> List[Dict]:
         soup = BeautifulSoup(html, 'lxml')
         products = []
         
-        product_items = soup.find_all('div', class_='product-list__item-roznica')
+        product_items = soup.find_all('div', class_='product-thumb')
         
         for item in product_items:
             try:
-                name_elem = item.find('a', class_='data_name_product')
-                price_elem = item.find('p', class_='price-type-roznica')
+                name_elem = item.find('h4')
+                if name_elem:
+                    name_elem = name_elem.find('a')
+                price_elem = item.find('span', class_='price-new')
                 
                 if name_elem and price_elem:
                     name = name_elem.get_text(strip=True)
                     price_text = price_elem.get_text(strip=True)
                     
                     # Извлекаем цену
-                    price_match = re.search(r'(\d+)\s*руб', price_text)
+                    price_match = re.search(r'(\d+)', price_text.replace(' ', ''))
                     price = int(price_match.group(1)) if price_match else 0
                     
                     normalized = self.normalize_product_name(name)
@@ -31,26 +33,26 @@ class TrimetParser(BaseParser):
                         'diameter': normalized['diameter'],
                         'length': normalized['length'],
                         'price': price,
-                        'source': 'Тримет'
+                        'source': 'Парад'
                     })
             except Exception as e:
-                print(f"Error parsing Trimet product: {e}")
+                print(f"Error parsing Parad product: {e}")
                 continue
         
         return products
     
     def normalize_product_name(self, name: str) -> Dict:
-        # Арматура 8 (6 метров) -> диаметр: 8, длина: 6
+        # Арматура 8 мм AIII 6м -> диаметр: 8, длина: 6
         diameter = None
         length = None
         
         # Ищем диаметр
-        diam_match = re.search(r'Арматура\s*(\d+)', name)
+        diam_match = re.search(r'(\d+)\s*мм', name)
         if diam_match:
             diameter = diam_match.group(1)
         
         # Ищем длину
-        length_match = re.search(r'(\d+[\.,]?\d*)\s*метр', name)
+        length_match = re.search(r'(\d+[\.,]?\d*)\s*м', name)
         if length_match:
             length_str = length_match.group(1).replace(',', '.')
             length = float(length_str)
