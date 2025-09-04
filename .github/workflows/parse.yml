@@ -2,15 +2,10 @@ name: Metal Products Parser
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: '0 8 * * *'
 
 jobs:
   parse:
     runs-on: ubuntu-latest
-    
-    permissions:
-      contents: write
     
     steps:
     - name: Checkout code
@@ -26,27 +21,25 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
         
-    - name: Debug environment
+    - name: Create test .env file
       run: |
-        echo "Trimet URL: ${{ secrets.TRIMET_ARMATURA_URL }}"
-        echo "Parad URL: ${{ secrets.PARAD_ARMATURA_URL }}"
+        echo "TRIMET_ARMATURA_URL=https://trimet.ru/catalog/chernyy_metalloprokat/armatura_1/" > .env
+        echo "PARAD_ARMATURA_URL=https://72parad.ru/metalloprokat/armatura/" >> .env
+        echo "Created .env file with test URLs"
         
     - name: Run parser
-      env:
-        TRIMET_ARMATURA_URL: ${{ secrets.TRIMET_ARMATURA_URL }}
-        PARAD_ARMATURA_URL: ${{ secrets.PARAD_ARMATURA_URL }}
       run: |
         python main.py
         
-    - name: Check if results.json exists
+    - name: Check results
       run: |
         if [ -f "results.json" ]; then
-          echo "results.json exists"
-          ls -la results.json
-          echo "First few lines:"
+          echo "✅ results.json created successfully"
+          echo "File size: $(wc -l results.json | awk '{print $1}') lines"
+          echo "First 10 lines:"
           head -n 10 results.json
         else
-          echo "ERROR: results.json does not exist!"
+          echo "❌ results.json not found!"
           exit 1
         fi
         
@@ -55,16 +48,3 @@ jobs:
       with:
         name: parsing-results
         path: results.json
-        
-    - name: Commit and push results
-      run: |
-        git config --local user.email "github-actions[bot]@users.noreply.github.com"
-        git config --local user.name "github-actions[bot]"
-        
-        if git diff --quiet --exit-code results.json; then
-          echo "No changes to commit"
-        else
-          git add results.json
-          git commit -m "🤖 Auto-update: parsing results [$(date +'%Y-%m-%d %H:%M')]"
-          git push
-        fi
