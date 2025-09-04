@@ -5,37 +5,8 @@ import re
 from typing import List, Dict
 import time
 import random
-import requests
-from fp.fp import FreeProxy
+import os
 
-class BaseParser(ABC):
-    def __init__(self, timeout=60, max_retries=5, use_proxy=False):
-        # ... остальной код ...
-        self.use_proxy = use_proxy
-        
-    def get_proxy(self):
-        """Получить случайный бесплатный прокси"""
-        try:
-            proxy = FreeProxy(rand=True, timeout=1).get()
-            return {'http': proxy, 'https': proxy}
-        except:
-            return None
-    
-    def fetch_page(self, url: str) -> str:
-        for attempt in range(self.max_retries):
-            try:
-                proxies = None
-                if self.use_proxy and attempt > 1:  # Используем прокси после 2й неудачной попытки
-                    proxies = self.get_proxy()
-                    print(f"Using proxy: {proxies}")
-                
-                response = self.session.get(
-                    url, 
-                    timeout=self.timeout,
-                    allow_redirects=True,
-                    proxies=proxies
-                )
-                # ... остальной код ...
 class BaseParser(ABC):
     def __init__(self, timeout=60, max_retries=5):
         self.timeout = timeout
@@ -87,3 +58,11 @@ class BaseParser(ABC):
                     raise
                     
         return ""
+
+    @abstractmethod
+    def parse_products(self, html: str) -> List[Dict]:
+        pass
+    
+    @abstractmethod
+    def normalize_product_name(self, name: str) -> Dict:
+        pass
