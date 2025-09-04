@@ -1,43 +1,33 @@
-name: Create Results File
+name: Metal Parser
 
 on:
   workflow_dispatch:
 
 jobs:
-  create-results:
+  parse:
     runs-on: ubuntu-latest
     
     steps:
-    - name: Create results.json
-      run: |
-        echo '{
-          "matched_products": [
-            {
-              "name": "Арматура 6 6.0м",
-              "diameter": "6",
-              "length": 6.0,
-              "prices": {
-                "Тримет": 90,
-                "Парад": 88
-              }
-            },
-            {
-              "name": "Арматура 8 6.0м",
-              "diameter": "8",
-              "length": 6.0,
-              "prices": {
-                "Тримет": 160,
-                "Парад": 150
-              }
-            }
-          ],
-          "timestamp": "'$(date -u +"%Y-%m-%dT%H:%M:%SZ")'",
-          "note": "Created directly in workflow"
-        }' > results.json
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
         
-    - name: Show results
+    - name: Install dependencies
       run: |
-        echo "✅ results.json created:"
+        pip install requests beautifulsoup4 lxml
+        
+    - name: Run parser
+      run: python main.py
+        
+    - name: Check results
+      run: |
+        echo "Файл results.json:"
+        ls -la results.json
+        echo "Содержимое:"
         cat results.json
         
     - name: Upload results
