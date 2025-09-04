@@ -3,3 +3,4 @@ beautifulsoup4==4.12.2
 lxml==4.9.3
 python-dotenv==1.0.0
 urllib3==2.0.7
+free-proxy==1.1.0
