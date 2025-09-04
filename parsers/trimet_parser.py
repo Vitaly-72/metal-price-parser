@@ -41,27 +41,31 @@ class TrimetParser(BaseParser):
         
         return products
     
-    def normalize_product_name(self, name: str) -> Dict:
-        diameter = None
-        length = None
-        
-        # Ищем диаметр
-        diam_match = re.search(r'Арматура\s*(\d+)', name)
-        if diam_match:
-            diameter = diam_match.group(1)
-        
-        # Ищем длину
-        length_match = re.search(r'(\d+[\.,]?\d*)\s*метр', name)
-        if length_match:
-            length_str = length_match.group(1).replace(',', '.')
+   def normalize_product_name(self, name: str) -> Dict:
+    diameter = None
+    length = None
+    
+    # Ищем диаметр
+    diam_match = re.search(r'Арматура\s*(\d+)', name)
+    if diam_match:
+        diameter = diam_match.group(1)
+    
+    # Ищем длину (поддерживаем дробные числа с запятой и точкой)
+    length_match = re.search(r'(\d+[\.,]?\d*)\s*метр', name)
+    if length_match:
+        length_str = length_match.group(1).replace(',', '.')
+        try:
             length = float(length_str)
-        
-        normalized_name = f"Арматура {diameter or '?'} {length or '?'}м"
-        
-        return {
-            'name': normalized_name,
-            'diameter': diameter,
-            'length': length
+        except ValueError:
+            length = None
+    
+    normalized_name = f"Арматура {diameter or '?'} {length or '?'}м"
+    
+    return {
+        'name': normalized_name,
+        'diameter': diameter,
+        'length': length
+    }
         }
 
 # Явно экспортируем класс
