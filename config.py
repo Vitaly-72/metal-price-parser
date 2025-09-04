@@ -1,30 +1,35 @@
 # config.py
 
-# Тримет - арматура (несколько страниц)
-TRIMET_ARMATURA_URLS = [
-    "https://trimet.ru/catalog/chernyy_metalloprokat/armatura_1/"
-]
-
-# Парад - арматура (несколько страниц)  
-PARAD_ARMATURA_URLS = [
-    "https://72parad.ru/metalloprokat/armatura/"
-]
-
-# Другие категории (пример)
-TRIMET_TRUBA_URLS = [
-    "https://trimet.ru/catalog/chernyy_metalloprokat/truby_profilnye/?PAGEN_1=1",
-    "https://trimet.ru/catalog/chernyy_metalloprokat/truby_profilnye/?PAGEN_1=2"
-]
-
-PARAD_TRUBA_URLS = [
-    "https://72parad.ru/metalloprokat/truba-profilnaya/"
-]
-# Тестовые данные для Тримет (на основе вашего HTML)
-TRIMET_TEST_DATA = [
-    {"name": "Арматура 6 (3 метра)", "price": 50, "site": "Тримет"},
-    {"name": "Арматура 6 (6 метров)", "price": 90, "site": "Тримет"},
-    {"name": "Арматура 8 (3 метра)", "price": 80, "site": "Тримет"},
-    {"name": "Арматура 8 (6 метров)", "price": 160, "site": "Тримет"},
-    {"name": "Арматура 10 (5,85 метров)", "price": 230, "site": "Тримет"},
-    {"name": "Арматура 12 (5,85 метров)", "price": 310, "site": "Тримет"}
-]
+# URLs для парсинга
+URLS = {
+    'armatura': {
+        'parad': ['https://72parad.ru/metalloprokat/armatura/'],
+        'trimet': ['https://trimet.ru/catalog/chernyy_metalloprokat/armatura_1/']
+    },
+    'truba_profilnaya': {
+        'parad': ['https://72parad.ru/metalloprokat/truba-profilnaya/'],
+        'trimet': [
+            'https://trimet.ru/catalog/chernyy_metalloprokat/truby_profilnye/',
+            'https://trimet.ru/catalog/chernyy_metalloprokat/truby_profilnye/?PAGEN_1=2'
+        ]
+    },
+    'ugolok': {
+        'parad': ['https://72parad.ru/metalloprokat/ugolok-stalnoj/'],
+        'trimet': ['https://trimet.ru/catalog/chernyy_metalloprokat/ugolok_stalnoy/']
+    },
+    'list_stalnoy': {
+        'parad': ['https://72parad.ru/metalloprokat/list-stalnoj/'],
+        'trimet': ['https://trimet.ru/catalog/chernyy_metalloprokat/list_stalnoy/']
+    },
+    'shveller': {
+        'parad': ['https://72parad.ru/metalloprokat/shveller/'],
+        'trimet': ['https://trimet.ru/catalog/chernyy_metalloprokat/shveller_1/']
+    },
+    'truba_vgp': {
+        'parad': ['https://72parad.ru/metalloprokat/truba-kruglaya/'],
+        'trimet': [
+            'https://trimet.ru/catalog/chernyy_metalloprokat/truby_vodogazoprovodnye/',
+            'https://trimet.ru/catalog/chernyy_metalloprokat/truby_elektrosvarnye/'
+        ]
+    }
+}
