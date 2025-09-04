@@ -1,0 +1,65 @@
+name: Metal proba
+
+on:
+  workflow_dispatch:
+
+jobs:
+  parse:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Create and process results
+      run: |
+        # Все действия в одном шаге
+        set -e  # Прерывать при ошибках
+        
+        # Установка Python и зависимостей
+        python -m pip install --upgrade pip
+        pip install requests beautifulsoup4 lxml
+        
+        # Создаем гарантированно пустой файл
+        cat > results.json << 'EOF'
+{
+  "trimet": [],
+  "parad": [],
+  "timestamp": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
+  "status": "created"
+}
+EOF
+        
+        # Запускаем парсер (перезаписываем файл)
+        if [ -f "main.py" ]; then
+          echo "Запускаем main.py..."
+          python main.py
+        else
+          echo "main.py не найден, используем тестовые данные"
+          cat > results.json << 'EOF'
+{
+  "trimet": [
+    {"name": "Арматура 6 (6 метров)", "price": 90, "diameter": "6", "length": 6.0},
+    {"name": "Арматура 8 (6 метров)", "price": 160, "diameter": "8", "length": 6.0}
+  ],
+  "parad": [
+    {"name": "Арматура 6 мм AIII 6м", "price": 88, "diameter": "6", "length": 6.0},
+    {"name": "Арматура 8 мм AIII 6м", "price": 150, "diameter": "8", "length": 6.0}
+  ],
+  "timestamp": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
+  "status": "test_data"
+}
+EOF
+        fi
+        
+        # Проверяем результат
+        echo "Файл создан:"
+        ls -la results.json
+        echo "Содержимое:"
+        cat results.json
+        
+    - name: Upload results
+      uses: actions/upload-artifact@v4
+      with:
+        name: parsing-results
+        path: results.json
