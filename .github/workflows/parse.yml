@@ -1,22 +1,20 @@
 name: Metal Products Parser
 
 on:
-  workflow_dispatch:  # Ручной запуск
+  workflow_dispatch:
   schedule:
-    - cron: '0 8 * * *'  # Ежедневно в 8:00
+    - cron: '0 8 * * *'
 
 jobs:
   parse:
     runs-on: ubuntu-latest
     
     permissions:
-      contents: write  # Даем разрешение на запись для коммитов
+      contents: write
     
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-      with:
-        fetch-depth: 0  # Полная история коммитов
       
     - name: Set up Python
       uses: actions/setup-python@v5
@@ -28,6 +26,11 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
         
+    - name: Debug environment
+      run: |
+        echo "Trimet URL: ${{ secrets.TRIMET_ARMATURA_URL }}"
+        echo "Parad URL: ${{ secrets.PARAD_ARMATURA_URL }}"
+        
     - name: Run parser
       env:
         TRIMET_ARMATURA_URL: ${{ secrets.TRIMET_ARMATURA_URL }}
@@ -35,7 +38,19 @@ jobs:
       run: |
         python main.py
         
-    - name: Upload results as artifact
+    - name: Check if results.json exists
+      run: |
+        if [ -f "results.json" ]; then
+          echo "results.json exists"
+          ls -la results.json
+          echo "First few lines:"
+          head -n 10 results.json
+        else
+          echo "ERROR: results.json does not exist!"
+          exit 1
+        fi
+        
+    - name: Upload results
       uses: actions/upload-artifact@v4
       with:
         name: parsing-results
@@ -46,7 +61,6 @@ jobs:
         git config --local user.email "github-actions[bot]@users.noreply.github.com"
         git config --local user.name "github-actions[bot]"
         
-        # Проверяем есть ли изменения
         if git diff --quiet --exit-code results.json; then
           echo "No changes to commit"
         else
