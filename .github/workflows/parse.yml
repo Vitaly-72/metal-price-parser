@@ -23,13 +23,6 @@ jobs:
     - name: Run parser
       run: python main.py
         
-    - name: Check results
-      run: |
-        echo "Файл results.json:"
-        ls -la results.json
-        echo "Содержимое:"
-        cat results.json
-        
     - name: Upload results
       uses: actions/upload-artifact@v4
       with:
