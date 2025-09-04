@@ -9,14 +9,19 @@ jobs:
   parse:
     runs-on: ubuntu-latest
     
+    permissions:
+      contents: write  # Даем разрешение на запись для коммитов
+    
     steps:
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Полная история коммитов
       
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
-        python-version: '3.9'
+        python-version: '3.11'
         
     - name: Install dependencies
       run: |
@@ -30,16 +35,22 @@ jobs:
       run: |
         python main.py
         
-    - name: Upload results
-      uses: actions/upload-artifact@v3
+    - name: Upload results as artifact
+      uses: actions/upload-artifact@v4
       with:
         name: parsing-results
         path: results.json
         
     - name: Commit and push results
       run: |
-        git config --local user.email "action@github.com"
-        git config --local user.name "GitHub Action"
-        git add results.json
-        git diff --staged --quiet || git commit -m "Update parsing results [$(date +'%Y-%m-%d %H:%M')]"
-        git push
+        git config --local user.email "github-actions[bot]@users.noreply.github.com"
+        git config --local user.name "github-actions[bot]"
+        
+        # Проверяем есть ли изменения
+        if git diff --quiet --exit-code results.json; then
+          echo "No changes to commit"
+        else
+          git add results.json
+          git commit -m "🤖 Auto-update: parsing results [$(date +'%Y-%m-%d %H:%M')]"
+          git push
+        fi
