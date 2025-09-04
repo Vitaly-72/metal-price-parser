@@ -1,4 +1,3 @@
-# parsers/trimet_parser.py
 from .base_parser import BaseParser
 from bs4 import BeautifulSoup
 import re
@@ -9,7 +8,6 @@ class TrimetParser(BaseParser):
         soup = BeautifulSoup(html, 'lxml')
         products = []
         
-        # Поиск товаров
         product_items = soup.find_all('div', class_='product-list__item-roznica')
         
         for item in product_items:
@@ -21,7 +19,6 @@ class TrimetParser(BaseParser):
                     name = name_elem.get_text(strip=True)
                     price_text = price_elem.get_text(strip=True)
                     
-                    # Извлекаем цену
                     price_match = re.search(r'(\d+)\s*руб', price_text)
                     price = int(price_match.group(1)) if price_match else 0
                     
@@ -41,32 +38,26 @@ class TrimetParser(BaseParser):
         
         return products
     
-   def normalize_product_name(self, name: str) -> Dict:
-    diameter = None
-    length = None
-    
-    # Ищем диаметр
-    diam_match = re.search(r'Арматура\s*(\d+)', name)
-    if diam_match:
-        diameter = diam_match.group(1)
-    
-    # Ищем длину (поддерживаем дробные числа с запятой и точкой)
-    length_match = re.search(r'(\d+[\.,]?\d*)\s*метр', name)
-    if length_match:
-        length_str = length_match.group(1).replace(',', '.')
-        try:
-            length = float(length_str)
-        except ValueError:
-            length = None
-    
-    normalized_name = f"Арматура {diameter or '?'} {length or '?'}м"
-    
-    return {
-        'name': normalized_name,
-        'diameter': diameter,
-        'length': length
-    }
+    def normalize_product_name(self, name: str) -> Dict:
+        diameter = None
+        length = None
+        
+        diam_match = re.search(r'Арматура\s*(\d+)', name)
+        if diam_match:
+            diameter = diam_match.group(1)
+        
+        length_match = re.search(r'(\d+[\.,]?\d*)\s*метр', name)
+        if length_match:
+            length_str = length_match.group(1).replace(',', '.')
+            try:
+                length = float(length_str)
+            except ValueError:
+                length = None
+        
+        normalized_name = f"Арматура {diameter or '?'} {length or '?'}м"
+        
+        return {
+            'name': normalized_name,
+            'diameter': diameter,
+            'length': length
         }
-
-# Явно экспортируем класс
-__all__ = ['TrimetParser']
