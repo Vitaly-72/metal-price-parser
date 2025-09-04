@@ -10,7 +10,6 @@ class ProductMatcher:
         for t_product in trimet_products:
             matched = False
             for p_product in parad_products:
-                # Более гибкое сравнение
                 if (t_product['diameter'] == p_product['diameter'] and 
                     abs(t_product['length'] - p_product['length']) < 0.1 and
                     t_product['diameter'] is not None and 
