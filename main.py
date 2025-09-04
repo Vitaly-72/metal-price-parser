@@ -4,81 +4,23 @@ from bs4 import BeautifulSoup
 import re
 from datetime import datetime
 from typing import List, Dict
-from config import TRIMET_ARMATURA_URLS, PARAD_ARMATURA_URLS, TRIMET_TEST_DATA
+from config import URLS
 
 class Parser:
     def __init__(self):
         self.session = requests.Session()
         self.session.headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-            'Accept-Language': 'ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7',
-            'Referer': 'https://google.com/',
         }
     
-    def parse_trimet(self, urls: List[str]) -> List[Dict]:
-        """Парсим Тримет или используем тестовые данные при ошибке"""
-        print("🔄 Попытка парсинга Тримет...")
-        
-        try:
-            # Пробуем спарсить реальные данные
-            url = urls[0]
-            print(f"Пытаемся подключиться к: {url}")
-            
-            # Увеличиваем таймаут и добавляем retry
-            response = self.session.get(url, timeout=10)
-            
-            if response.status_code == 200:
-                soup = BeautifulSoup(response.text, 'lxml')
-                items = soup.find_all('div', class_='product-list__item-roznica')
-                
-                products = []
-                for item in items:
-                    product = self.parse_trimet_product(item, url)
-                    if product:
-                        products.append(product)
-                
-                print(f"✅ Успешно спарсено товаров Тримет: {len(products)}")
-                return products
-            else:
-                print(f"❌ HTTP ошибка: {response.status_code}")
-                raise Exception(f"HTTP {response.status_code}")
-                
-        except Exception as e:
-            print(f"⚠️ Ошибка парсинга Тримет: {e}")
-            print("🔄 Используем тестовые данные для Тримет")
-            return TRIMET_TEST_DATA
-    
-    def parse_trimet_product(self, item, url: str):
-        """Парсим товар Тримет"""
-        try:
-            name_elem = item.find('a', class_='data_name_product')
-            price_elem = item.find('p', class_='price-type-roznica')
-            
-            if name_elem and price_elem:
-                name = name_elem.get_text(strip=True)
-                price_text = price_elem.get_text(strip=True)
-                
-                price_match = re.search(r'(\d+)\s*руб', price_text)
-                price = int(price_match.group(1)) if price_match else 0
-                
-                return {
-                    'name': name,
-                    'price': price,
-                    'url': url,
-                    'site': 'Тримет'
-                }
-        except Exception as e:
-            print(f"Ошибка парсинга товара Тримет: {e}")
-        return None
-    
-    def parse_parad(self, urls: List[str]) -> List[Dict]:
-        """Парсим Парад"""
+    def parse_site(self, urls: List[str], site_type: str) -> List[Dict]:
+        """Парсим сайт"""
         all_products = []
         
-        for i, url in enumerate(urls, 1):
+        for url in urls:
             try:
-                print(f"🔄 Парсим Парад страница {i}: {url}")
+                print(f"🔗 Парсим: {url}")
                 response = self.session.get(url, timeout=15)
                 
                 if response.status_code != 200:
@@ -86,101 +28,135 @@ class Parser:
                     continue
                 
                 soup = BeautifulSoup(response.text, 'lxml')
-                items = soup.find_all('div', class_='product-thumb')
-                print(f"Найдено товарных элементов: {len(items)}")
-                
                 products = []
-                for item in items:
-                    product = self.parse_parad_product(item, url)
-                    if product:
-                        products.append(product)
-                        print(f"✅ Найден товар: {product['name']} - {product['price']} руб.")
                 
-                print(f"📦 Найдено товаров на странице {i}: {len(products)}")
+                if site_type == 'trimet':
+                    products = self.parse_trimet(soup, url)
+                elif site_type == 'parad':
+                    products = self.parse_parad(soup, url)
+                
+                print(f"✅ Найдено товаров: {len(products)}")
                 all_products.extend(products)
                 
             except Exception as e:
-                print(f"❌ Ошибка парсинга страницы Парад {i}: {e}")
+                print(f"❌ Ошибка: {e}")
                 continue
         
         return all_products
     
-    def parse_parad_product(self, item, url: str):
-        """Парсим товар Парад"""
-        try:
-            name_elem = item.find('h4')
-            if name_elem:
-                name_elem = name_elem.find('a')
-            price_elem = item.find('span', class_='price-new')
-            
-            if name_elem and price_elem:
-                name = name_elem.get_text(strip=True)
-                price_text = price_elem.get_text(strip=True)
+    def parse_trimet(self, soup, url: str) -> List[Dict]:
+        """Парсим Тримет"""
+        products = []
+        items = soup.find_all('div', class_='product-list__item-roznica')
+        
+        for item in items:
+            try:
+                name_elem = item.find('a', class_='data_name_product')
+                price_elem = item.find('p', class_='price-type-roznica')
                 
-                price_match = re.search(r'(\d+)', price_text.replace(' ', ''))
-                price = int(price_match.group(1)) if price_match else 0
+                if name_elem and price_elem:
+                    name = name_elem.get_text(strip=True)
+                    price_text = price_elem.get_text(strip=True)
+                    
+                    price_match = re.search(r'(\d+)\s*руб', price_text)
+                    price = int(price_match.group(1)) if price_match else 0
+                    
+                    products.append({
+                        'name': name,
+                        'price': price,
+                        'url': url,
+                        'site': 'Тримет'
+                    })
+                    
+            except Exception as e:
+                print(f"Ошибка парсинга товара Тримет: {e}")
+                continue
+        
+        return products
+    
+    def parse_parad(self, soup, url: str) -> List[Dict]:
+        """Парсим Парад"""
+        products = []
+        items = soup.find_all('div', class_='product-thumb')
+        
+        for item in items:
+            try:
+                name_elem = item.find('h4')
+                if name_elem:
+                    name_elem = name_elem.find('a')
+                price_elem = item.find('span', class_='price-new')
                 
-                return {
-                    'name': name,
-                    'price': price,
-                    'url': url,
-                    'site': 'Парад'
-                }
-        except Exception as e:
-            print(f"Ошибка парсинга товара Парад: {e}")
-        return None
+                if name_elem and price_elem:
+                    name = name_elem.get_text(strip=True)
+                    price_text = price_elem.get_text(strip=True)
+                    
+                    price_match = re.search(r'(\d+)', price_text.replace(' ', ''))
+                    price = int(price_match.group(1)) if price_match else 0
+                    
+                    products.append({
+                        'name': name,
+                        'price': price,
+                        'url': url,
+                        'site': 'Парад'
+                    })
+                    
+            except Exception as e:
+                print(f"Ошибка парсинга товара Парад: {e}")
+                continue
+        
+        return products
 
 def main():
-    print("🚀 Запуск парсера...")
+    print("🚀 Запуск упрощенного парсера...")
     
     parser = Parser()
+    results = {}
     
-    print("=" * 50)
-    print("🔍 ПАРСИНГ ТРИМЕТ")
-    print("=" * 50)
-    trimet_products = parser.parse_trimet(TRIMET_ARMATURA_URLS)
+    for category, sites in URLS.items():
+        print(f"\n{'='*50}")
+        print(f"📦 КАТЕГОРИЯ: {category.upper()}")
+        print(f"{'='*50}")
+        
+        category_results = {}
+        
+        # Парсим Тримет
+        if 'trimet' in sites:
+            print("🔍 Парсим Тримет...")
+            trimet_products = parser.parse_site(sites['trimet'], 'trimet')
+            category_results['trimet'] = {
+                'products': trimet_products,
+                'count': len(trimet_products)
+            }
+        
+        # Парсим Парад
+        if 'parad' in sites:
+            print("🔍 Парсим Парад...")
+            parad_products = parser.parse_site(sites['parad'], 'parad')
+            category_results['parad'] = {
+                'products': parad_products,
+                'count': len(parad_products)
+            }
+        
+        results[category] = category_results
     
-    print("=" * 50)
-    print("🔍 ПАРСИНГ ПАРАД")
-    print("=" * 50)
-    parad_products = parser.parse_parad(PARAD_ARMATURA_URLS)
-    
-    print("=" * 50)
-    print("📊 ИТОГИ:")
-    print("=" * 50)
-    print(f"Тримет: {len(trimet_products)} товаров")
-    print(f"Парад: {len(parad_products)} товаров")
-    
-    # Собираем результаты
-    results = {
-        'trimet': {
-            'products': trimet_products,
-            'total_count': len(trimet_products),
-            'note': 'Использованы тестовые данные из-за блокировки сайта' if trimet_products == TRIMET_TEST_DATA else 'Реальные данные'
-        },
-        'parad': {
-            'products': parad_products,
-            'total_count': len(parad_products)
-        },
-        'timestamp': datetime.now().isoformat()
-    }
+    # Добавляем timestamp
+    results['timestamp'] = datetime.now().isoformat()
+    results['total_categories'] = len(URLS)
     
     # Сохраняем в файл
     with open('results.json', 'w', encoding='utf-8') as f:
         json.dump(results, f, ensure_ascii=False, indent=2)
     
-    print("💾 Результаты сохранены в results.json")
+    print(f"\n💾 Результаты сохранены в results.json")
     
-    # Выводим результаты
-    if trimet_products:
-        print("\n=== ТОВАРЫ ТРИМЕТ ===")
-        for i, product in enumerate(trimet_products, 1):
-            print(f"{i}. {product['name']} - {product['price']} руб.")
-    
-    if parad_products:
-        print("\n=== ТОВАРЫ ПАРАД ===")
-        for i, product in enumerate(parad_products, 1):
-            print(f"{i}. {product['name']} - {product['price']} руб.")
+    # Выводим статистику
+    print(f"\n📊 СТАТИСТИКА:")
+    print(f"{'='*50}")
+    for category, data in results.items():
+        if category not in ['timestamp', 'total_categories']:
+            trimet_count = data.get('trimet', {}).get('count', 0)
+            parad_count = data.get('parad', {}).get('count', 0)
+            print(f"{category}: Тримет={trimet_count}, Парад={parad_count}")
 
 if __name__ == "__main__":
     main()
