@@ -1,3 +1,4 @@
+# parsers/parad_parser.py
 from .base_parser import BaseParser
 from bs4 import BeautifulSoup
 import re
@@ -8,11 +9,14 @@ class ParadParser(BaseParser):
         soup = BeautifulSoup(html, 'lxml')
         products = []
         
+        # Поиск товаров
         product_items = soup.find_all('div', class_='product-thumb')
         
         for item in product_items:
             try:
-                name_elem = item.find('h4').find('a') if item.find('h4') else None
+                name_elem = item.find('h4')
+                if name_elem:
+                    name_elem = name_elem.find('a')
                 price_elem = item.find('span', class_='price-new')
                 
                 if name_elem and price_elem:
@@ -40,7 +44,6 @@ class ParadParser(BaseParser):
         return products
     
     def normalize_product_name(self, name: str) -> Dict:
-        # Арматура 8 мм AIII 6м -> диаметр: 8, длина: 6
         diameter = None
         length = None
         
@@ -62,3 +65,6 @@ class ParadParser(BaseParser):
             'diameter': diameter,
             'length': length
         }
+
+# Явно экспортируем класс
+__all__ = ['ParadParser']
