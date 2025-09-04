@@ -36,10 +36,10 @@ jobs:
         name: parsing-results
         path: results.json
         
-    - name: Commit results
+    - name: Commit and push results
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
         git add results.json
-        git commit -m "Update parsing results" || echo "No changes to commit"
+        git diff --staged --quiet || git commit -m "Update parsing results [$(date +'%Y-%m-%d %H:%M')]"
         git push
