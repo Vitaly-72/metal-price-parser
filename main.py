@@ -1,7 +1,7 @@
 import json
-from parsers.trimet_parser import TrimetParser
-from parsers.parad_parser import ParadParser
-from utils.product_matcher import ProductMatcher
+from datetime import datetime
+from parsers import TrimetParser, ParadParser
+from utils import ProductMatcher
 from config import Config
 
 def main():
@@ -39,6 +39,10 @@ def main():
         
         print(f"Successfully matched {len(matched_products)} products")
         print("Results saved to results.json")
+        
+        # Вывод результатов в консоль
+        for product in matched_products:
+            print(f"{product['name']}: Тримет: {product['prices']['Тримет']}; Парад: {product['prices']['Парад']}")
         
     except Exception as e:
         print(f"Error: {e}")
