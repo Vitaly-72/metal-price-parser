@@ -1,0 +1,37 @@
+name: Metal Parser
+
+on:
+  workflow_dispatch:
+
+jobs:
+  parse:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+        
+    - name: Install dependencies
+      run: |
+        pip install requests beautifulsoup4 lxml
+        
+    - name: Run parser
+      run: python main.py
+        
+    - name: Check results
+      run: |
+        echo "Файл results.json:"
+        ls -la results.json
+        echo "Содержимое:"
+        cat results.json
+        
+    - name: Upload results
+      uses: actions/upload-artifact@v4
+      with:
+        name: parsing-results
+        path: results.json
