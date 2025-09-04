@@ -1,24 +1,49 @@
-name: Create Results File
+name: Metal Products Parser
 
 on:
   workflow_dispatch:
 
 jobs:
-  create-file:
+  parse:
     runs-on: ubuntu-latest
     
     steps:
-    - name: Create results.json
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+        
+    - name: Install dependencies
       run: |
-        echo '{
-          "matched_products": [
-            {"name": "Арматура 6 6.0м", "diameter": "6", "length": 6.0, "prices": {"Тримет": 90, "Парад": 88}},
-            {"name": "Арматура 8 6.0м", "diameter": "8", "length": 6.0, "prices": {"Тримет": 160, "Парад": 150}},
-            {"name": "Арматура 10 5.85м", "diameter": "10", "length": 5.85, "prices": {"Тримет": 230, "Парад": 225}}
-          ],
-          "timestamp": "'$(date -u +"%Y-%m-%dT%H:%M:%SZ")'",
-          "note": "Created in workflow"
-        }' > results.json
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        
+    - name: Run parser
+      run: |
+        python main.py || echo "Parser failed, but continuing..."
+        
+    - name: Create results if missing
+      run: |
+        if [ ! -f "results.json" ]; then
+          echo "Creating fallback results.json..."
+          python -c "
+import json
+from datetime import datetime
+data = {'error': 'Parser failed', 'timestamp': datetime.now().isoformat(), 'status': 'fallback'}
+with open('results.json', 'w') as f:
+    json.dump(data, f, indent=2)
+          "
+        fi
+        
+    - name: Check results
+      run: |
+        echo "Checking results.json..."
+        ls -la results.json
+        echo "File content:"
+        cat results.json
         
     - name: Upload results
       uses: actions/upload-artifact@v4
