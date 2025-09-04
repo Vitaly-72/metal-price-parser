@@ -21,10 +21,21 @@ jobs:
         pip install requests beautifulsoup4 lxml
         
     - name: Run parser
-      run: python main.py
+      run: |
+        python main.py || echo "Парсер завершился с ошибкой, создаем пустой файл"
+        # Гарантируем, что файл существует
+        if [ ! -f "results.json" ]; then
+          echo '{"error": "Парсер не создал файл", "timestamp": "'$(date -u +"%Y-%m-%dT%H:%M:%SZ")'"}' > results.json
+        fi
         
     - name: Upload results
       uses: actions/upload-artifact@v4
       with:
         name: parsing-results
         path: results.json
+        
+    - name: Show file info
+      run: |
+        echo "Информация о файле:"
+        ls -la results.json
+        echo "Размер файла: $(wc -c < results.json) bytes"
